@@ -1,0 +1,66 @@
+# Byte-compiled Python files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment and dependency files
+env/
+venv/
+*.env
+*.venv
+
+# Cache and logs
+*.log
+*.cache
+*.egg-info/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Data files
+*.csv
+*.tsv
+*.xlsx
+*.json
+*.h5
+*.db
+
+# Model files and serialized objects
+*.pkl
+*.joblib
+*.h5
+*.model
+
+# Python package management
+*.pyenv
+.Python
+.mypy_cache/
+.pytest_cache/
+.tox/
+.nox/
+
+# IDE-specific files
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Build directories
+build/
+dist/
+*.egg
+*.eggs
+
+# Results and reports
+results/
+*.html
+*.png
+*.svg
+
+# Git-specific files
+!.gitignore
