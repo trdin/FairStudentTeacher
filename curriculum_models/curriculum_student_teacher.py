@@ -6,7 +6,7 @@ from inspect import signature
 
 
 class CurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
-    def __init__(self, teacher_type, student_type, transform_func, split_data=False, n_splits=5):
+    def __init__(self, teacher_type, student_type, transform_func, split_data=False, n_splits=5, random_state=40, shuffle=True):
         """
         Initialize the classifier with specific teacher and student types.
 
@@ -21,6 +21,8 @@ class CurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
         self.transform_func = transform_func
         self.split_data = split_data
         self.n_splits = n_splits
+        self.random_state = random_state
+        self.shuffle = shuffle
         self.teacher = None
         self.student = None
 
@@ -57,7 +59,13 @@ class CurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
         transformed_data = self.transform_func(X_student, y_prob, self.n_splits)
 
         # Train the student model incrementallys
-        self.student = self.student_type(random_state=42)
+        if not hasattr(self.student_type(), "random_state"):
+            self.student = self.student_type()
+        else:
+            self.student = self.student_type(random_state=self.random_state, shuffle=self.shuffle)
+
+
+
         classes = np.unique(y)  # Ensure partial_fit is aware of all classes
         for X_part, y_part in transformed_data:
             self.student.partial_fit(X_part, y_part, classes=classes)
