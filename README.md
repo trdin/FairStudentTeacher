@@ -6,13 +6,21 @@ This project demonstrates a machine learning pipeline for addressing fairness co
 
 The dataset used in this project is the **Adult Census Income dataset**, provided by the `fairlearn` library. The goal is to predict whether an individual earns more than $50K per year (`class`), using demographic and economic features (e.g., age, race, education).
 
-### Key Features
-- A **FairTeacherStudentClassifier** that:
-  - Trains a teacher model to predict outcomes.
-  - Identifies performance weaknesses of the teacher model across sensitive groups.
-  - Adjusts the student model training by assigning weights to groups where the teacher performs poorly.
-- Comparison of the FairTeacherStudentClassifier against a baseline model (RandomForestClassifier).
-- Evaluation of fairness through accuracy metrics for each racial group.
+---
+
+### Key Features  
+- A **FairTeacherStudentClassifier** that:  
+  - Trains a teacher model to predict outcomes.  
+  - Identifies performance weaknesses of the teacher model across sensitive groups.  
+  - Adjusts the student model training by assigning weights to groups where the teacher performs poorly.  
+- A **CurriculumStudentTeacher** model that:  
+  - Utilizes a curriculum-based approach where the student model learns from transformed teacher predictions.  
+  - Allows incremental training of the student model, making it adaptive to different datasets.  
+- A **WeightedCurriculumStudentTeacher** model that:  
+  - Incorporates group-specific weights based on the teacher model’s accuracy across different subgroups.  
+  - Supports different weighting strategies to enhance fairness in model performance.  
+- Comparison of these models against a baseline model (RandomForestClassifier).  
+- Evaluation of fairness through accuracy metrics for each racial group.  
 
 ---
 
