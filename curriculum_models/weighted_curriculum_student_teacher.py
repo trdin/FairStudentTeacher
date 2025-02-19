@@ -63,7 +63,7 @@ class WeightedCurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
         if not hasattr(self.student_type(), "random_state"):
             self.student = self.student_type()
         else:
-            self.student = self.student_type(random_state=self.random_state, shuffle=self.shuffle)
+            self.student = self.student_type(random_state=self.random_state, shuffle=self.shuffle, average=True)
 
         classes = np.unique(y)  # Ensure partial_fit is aware of all classes
         for X_part, y_part in transformed_data:
@@ -77,11 +77,12 @@ class WeightedCurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
         unique_groups = np.unique(z_student)
         group_accuracies = {}
 
+        #TODO  zanemnjaj za fairlearn 
         for group in unique_groups:
             group_mask = z_student == group
             group_accuracy = accuracy_score(y_student[group_mask], y_pred[group_mask])
             group_accuracies[group] = group_accuracy
-
+        
         if mode == 0:
             # Lower accuracy -> higher weight for all groups
             group_weights = {
@@ -95,8 +96,18 @@ class WeightedCurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
                 group: (1 if group != min_accuracy_group else 1.25)
                 for group in unique_groups
             }
+        elif mode == 2: 
+            # TODO maximo accuracy group - accurrcy for currect group
+            group_weights = {
+                group: 1 - acc for group, acc in group_accuracies.items()
+            }
         else:
             raise ValueError("Invalid mode. Choose 0 or 1.")
+        
+        #TODO  Normalize weights, numpy clip  
+        total_weight = sum(group_weights.values())
+        for group in group_weights:
+            group_weights[group] /= total_weight
 
         sample_weights = np.array([group_weights[group] for group in z_student])
         return sample_weights

@@ -62,7 +62,8 @@ class CurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
         if not hasattr(self.student_type(), "random_state"):
             self.student = self.student_type()
         else:
-            self.student = self.student_type(random_state=self.random_state, shuffle=self.shuffle)
+            #TODO add LogLoss - logisticna regressija- bi naj bla bolj primerna  
+            self.student = self.student_type(random_state=self.random_state, shuffle=self.shuffle, average=True)
 
 
 
