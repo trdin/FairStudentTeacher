@@ -3,36 +3,44 @@ from sklearn.metrics import accuracy_score
 import numpy as np
 from sklearn.model_selection import train_test_split
 from inspect import signature
+from fairlearn.metrics import MetricFrame
 
 
 class WeightedCurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
-    def __init__(self, teacher_type, student_type, transform_func, split_data=False, n_splits=5, random_state=40, shuffle=True):
+    def __init__(
+        self,
+        teacher,
+        student,
+        transform_func,
+        split_data=False,
+        n_splits=5,
+        random_state=40,
+        shuffle=True,
+    ):
         """
-        Initialize the classifier with specific teacher and student types.
+        Initialize the classifier with specific teacher and student models.
 
         Args:
-        teacher_type: Classifier class for the teacher model.
-        student_type: Classifier class for the student model (must support partial_fit).
+        teacher: Initialized classifier instance for the teacher model.
+        student: Initialized classifier instance for the student model (must support partial_fit).
         transform_func: Function that takes X and y (teacher predictions) and returns multiple X, y sets.
         split_data: Whether to split the data into teacher and student sets.
         """
-        self.teacher_type = teacher_type
-        self.student_type = student_type
+        self.teacher = teacher
+        self.student = student
         self.transform_func = transform_func
         self.split_data = split_data
         self.n_splits = n_splits
         self.random_state = random_state
         self.shuffle = shuffle
-        self.teacher = None
-        self.student = None
 
         # Check if the student supports partial_fit
-        if not hasattr(student_type(), "partial_fit"):
+        if not hasattr(self.student, "partial_fit"):
             raise ValueError(
-                f"The student model '{student_type.__name__}' must support partial_fit."
+                f"The student model '{type(self.student).__name__}' must support partial_fit."
             )
 
-    #Possible to check and adjust the wieghts every partial fit, but maybe this is not necessary since the model probably does this on its own?? 
+    # Possible to check and adjust the wieghts every partial fit, but maybe this is not necessary since the model probably does this on its own??
     def fit(self, X, y, z, mode=0):
         z = np.array(z)
 
@@ -47,7 +55,7 @@ class WeightedCurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
             X_student, y_student, z_student = X, y, z
 
         # Train the teacher model
-        self.teacher = self.teacher_type()
+        #self.teacher = self.teacher_type()
         self.teacher.fit(X_teacher, y_teacher)
 
         # Predict using the teacher model
@@ -60,34 +68,38 @@ class WeightedCurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
         transformed_data = self.transform_func(X_student, y_prob, self.n_splits)
 
         # Train the student model incrementallys
-        if not hasattr(self.student_type(), "random_state"):
+        """ if not hasattr(self.student_type(), "random_state"):
             self.student = self.student_type()
         else:
-            self.student = self.student_type(random_state=self.random_state, shuffle=self.shuffle, average=True)
+            self.student = self.student_type(
+                random_state=self.random_state, shuffle=self.shuffle, average=True
+            ) """
 
         classes = np.unique(y)  # Ensure partial_fit is aware of all classes
         for X_part, y_part in transformed_data:
             weights = X_part["weight"]
             X_part.drop(columns=["weight"], inplace=True)
-            self.student.partial_fit(X_part, y_part, classes=classes,  sample_weight=weights)
+            self.student.partial_fit(
+                X_part, y_part, classes=classes, sample_weight=weights
+            )
 
     def get_sample_weights(self, mode, y_student, z_student, y_prob):
         y_pred = np.argmax(y_prob, axis=1)
 
         unique_groups = np.unique(z_student)
-        group_accuracies = {}
 
-        #TODO  zanemnjaj za fairlearn 
-        for group in unique_groups:
-            group_mask = z_student == group
-            group_accuracy = accuracy_score(y_student[group_mask], y_pred[group_mask])
-            group_accuracies[group] = group_accuracy
-        
+        metric_frame = MetricFrame(
+            metrics=accuracy_score,
+            y_true=y_student,
+            y_pred=y_pred,
+            sensitive_features=z_student,
+        )
+
+        group_accuracies = metric_frame.by_group.to_dict()
+
         if mode == 0:
             # Lower accuracy -> higher weight for all groups
-            group_weights = {
-                group: 1 - acc for group, acc in group_accuracies.items()
-            }
+            group_weights = {group: 1 - acc for group, acc in group_accuracies.items()}
         elif mode == 1:
             # Set weight to 1.25 for the least accurate group
             min_accuracy_group = min(group_accuracies, key=group_accuracies.get)
@@ -96,18 +108,21 @@ class WeightedCurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
                 group: (1 if group != min_accuracy_group else 1.25)
                 for group in unique_groups
             }
-        elif mode == 2: 
-            # TODO maximo accuracy group - accurrcy for currect group
+        elif mode == 2:
+            # Maximum accuracy group - accuracy for current group
+            max_accuracy = max(group_accuracies.values())
             group_weights = {
-                group: 1 - acc for group, acc in group_accuracies.items()
+                group: max_accuracy - acc for group, acc in group_accuracies.items()
             }
         else:
-            raise ValueError("Invalid mode. Choose 0 or 1.")
-        
-        #TODO  Normalize weights, numpy clip  
+            raise ValueError("Invalid mode. Choose 0, 1, or 2.")
+
+        # Normalize weights using numpy clip
         total_weight = sum(group_weights.values())
         for group in group_weights:
-            group_weights[group] /= total_weight
+            group_weights[group] = np.clip(
+                group_weights[group] / total_weight, 0.01, 1.0
+            )  # Preventing zero weights
 
         sample_weights = np.array([group_weights[group] for group in z_student])
         return sample_weights

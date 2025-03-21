@@ -4,32 +4,30 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from inspect import signature
 
-
+#TODO add this type of definition to all of the models
 class CurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
-    def __init__(self, teacher_type, student_type, transform_func, split_data=False, n_splits=5, random_state=40, shuffle=True):
+    def __init__(self, teacher, student, transform_func, split_data=False, n_splits=5, random_state=40, shuffle=True):
         """
-        Initialize the classifier with specific teacher and student types.
+        Initialize the classifier with specific teacher and student models.
 
         Args:
-        teacher_type: Classifier class for the teacher model.
-        student_type: Classifier class for the student model (must support partial_fit).
+        teacher: Initialized classifier instance for the teacher model.
+        student: Initialized classifier instance for the student model (must support partial_fit).
         transform_func: Function that takes X and y (teacher predictions) and returns multiple X, y sets.
         split_data: Whether to split the data into teacher and student sets.
         """
-        self.teacher_type = teacher_type
-        self.student_type = student_type
+        self.teacher = teacher
+        self.student = student
         self.transform_func = transform_func
         self.split_data = split_data
         self.n_splits = n_splits
         self.random_state = random_state
         self.shuffle = shuffle
-        self.teacher = None
-        self.student = None
 
         # Check if the student supports partial_fit
-        if not hasattr(student_type(), "partial_fit"):
+        if not hasattr(self.student, "partial_fit"):
             raise ValueError(
-                f"The student model '{student_type.__name__}' must support partial_fit."
+                f"The student model '{type(self.student).__name__}' must support partial_fit."
             )
 
     def fit(self, X, y):
@@ -49,7 +47,6 @@ class CurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
             X_student, y_student = X, y
 
         # Train the teacher model
-        self.teacher = self.teacher_type()
         self.teacher.fit(X_teacher, y_teacher)
 
         # Predict using the teacher model
@@ -57,15 +54,6 @@ class CurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
 
         # Transform the teacher's predictions
         transformed_data = self.transform_func(X_student, y_prob, self.n_splits)
-
-        # Train the student model incrementallys
-        if not hasattr(self.student_type(), "random_state"):
-            self.student = self.student_type()
-        else:
-            #TODO add LogLoss - logisticna regressija- bi naj bla bolj primerna  
-            self.student = self.student_type(random_state=self.random_state, shuffle=self.shuffle, average=True)
-
-
 
         classes = np.unique(y)  # Ensure partial_fit is aware of all classes
         for X_part, y_part in transformed_data:

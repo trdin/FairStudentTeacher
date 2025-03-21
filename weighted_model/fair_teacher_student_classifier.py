@@ -6,24 +6,30 @@ from inspect import signature
 
 
 class FairTeacherStudentClassifier(BaseEstimator, ClassifierMixin):
-    def __init__(self, classifier_type, split_data=False):
+    def __init__(self, teacher, student, split_data=False):
         """
-        Initialize the classifier with a specific classifier type.
+        Initialize the classifier with separate teacher and student models.
 
         Args:
-        classifier_type: Classifier class (e.g., RandomForestClassifier, KNeighborsClassifier).
+        teacher_model: Classifier class for the teacher (e.g., RandomForestClassifier).
+        student_model: Classifier class for the student (e.g., KNeighborsClassifier).
         """
-
-        # check if classifier_type supports sample_weight
-        fit_sig = signature(classifier_type().fit)
-        if "sample_weight" not in fit_sig.parameters:
+        # Check if teacher model supports sample_weight
+        fit_sig_teacher = signature(teacher.fit)
+        if "sample_weight" not in fit_sig_teacher.parameters:
             raise ValueError(
-                f"The classifier_type '{classifier_type.__name__}' does not support sample weights."
+                f"The teacher model '{teacher.__name__}' does not support sample weights."
+            )
+        
+        # Check if student model supports sample_weight
+        fit_sig_student = signature(student.fit)
+        if "sample_weight" not in fit_sig_student.parameters:
+            raise ValueError(
+                f"The student model '{student.__name__}' does not support sample weights."
             )
 
-        self.classifier_type = classifier_type
-        self.teacher = None
-        self.student = None
+        self.teacher = teacher
+        self.student = student
         self.split_data = split_data
 
     def fit(self, X, y, z, mode=0):
@@ -35,12 +41,11 @@ class FairTeacherStudentClassifier(BaseEstimator, ClassifierMixin):
                 train_test_split(X, y, z, test_size=0.5, stratify=z, random_state=42)
             )
         else:
-            # dont split the data
+            # Don't split the data
             X_teacher, y_teacher, z_teacher = X, y, z
             X_student, y_student, z_student = X, y, z
 
         # Initialize and train the teacher model
-        self.teacher = self.classifier_type()
         self.teacher.fit(X_teacher, y_teacher)
 
         # Predict using the teacher model on the student data
@@ -72,7 +77,6 @@ class FairTeacherStudentClassifier(BaseEstimator, ClassifierMixin):
 
         sample_weights = np.array([group_weights[group] for group in z_student])
 
-        self.student = self.classifier_type()
         self.student.fit(X_student, y_pred, sample_weight=sample_weights)
 
     def predict(self, X):

@@ -6,24 +6,30 @@ from inspect import signature
 
 
 class TeacherStudentClassifier(BaseEstimator, ClassifierMixin):
-    def __init__(self, classifier_type, split_data=False):
+    def __init__(self, teacher, student, split_data=False):
         """
-        Initialize the classifier with a specific classifier type.
+        Initialize the classifier with separate teacher and student models.
 
         Args:
-        classifier_type: Classifier class (e.g., RandomForestClassifier, KNeighborsClassifier).
+        teacher_model: Classifier class for the teacher (e.g., RandomForestClassifier).
+        student_model: Classifier class for the student (e.g., KNeighborsClassifier).
         """
-
-        # check if classifier_type supports sample_weight
-        fit_sig = signature(classifier_type().fit)
-        if "sample_weight" not in fit_sig.parameters:
+        # Check if teacher model supports sample_weight
+        fit_sig_teacher = signature(teacher.fit)
+        if "sample_weight" not in fit_sig_teacher.parameters:
             raise ValueError(
-                f"The classifier_type '{classifier_type.__name__}' does not support sample weights."
+                f"The teacher model '{teacher.__name__}' does not support sample weights."
+            )
+        
+        # Check if student model supports sample_weight
+        fit_sig_student = signature(student.fit)
+        if "sample_weight" not in fit_sig_student.parameters:
+            raise ValueError(
+                f"The student model '{student.__name__}' does not support sample weights."
             )
 
-        self.classifier_type = classifier_type  # preveri će podpira weights čene error
-        self.teacher = None
-        self.student = None
+        self.teacher = teacher
+        self.student = student
         self.split_data = split_data
 
     def fit(self, X, y):
@@ -42,14 +48,12 @@ class TeacherStudentClassifier(BaseEstimator, ClassifierMixin):
             X_teacher, y_teacher = X, y
             X_student, y_student = X, y
 
-        self.teacher = self.classifier_type()
         self.teacher.fit(X_teacher, y_teacher)
 
         # Predict using teacher model
         y_pred = self.teacher.predict(X_student)
 
         # Train student model
-        self.student = self.classifier_type()
         self.student.fit(X_student, y_pred)
 
     def predict(self, X):
