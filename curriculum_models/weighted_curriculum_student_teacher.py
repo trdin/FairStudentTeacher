@@ -67,14 +67,6 @@ class WeightedCurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
         # Transform the teacher's predictions
         transformed_data = self.transform_func(X_student, y_prob, self.n_splits)
 
-        # Train the student model incrementallys
-        """ if not hasattr(self.student_type(), "random_state"):
-            self.student = self.student_type()
-        else:
-            self.student = self.student_type(
-                random_state=self.random_state, shuffle=self.shuffle, average=True
-            ) """
-
         classes = np.unique(y)  # Ensure partial_fit is aware of all classes
         for X_part, y_part in transformed_data:
             weights = X_part["weight"]

@@ -176,8 +176,16 @@ class FairnessEvaluatorHelper:
             plt.ylabel("Models")
             plt.title(f"Accuracy Distribution by Model for {group_name} (Sensitive Feature)")
 
+            # Get the min and max accuracy values
+            min_accuracy = df.min().min()
+            max_accuracy = df.max().max()
+
+            # Add 0.05 to the min and max accuracy for setting chart limits
+            min_limit = max(0, min_accuracy - 0.05)  # Ensure the min limit doesn't go below 0
+            max_limit = min(1, max_accuracy + 0.05)  # Ensure the max limit doesn't exceed 
+
             # Set consistent x-axis limits (adjust as needed)
-            plt.xlim(0.75, 1)
+            plt.xlim(min_limit, max_limit)
 
             plt.tight_layout()
             plt.show()
