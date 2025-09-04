@@ -4,7 +4,6 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from inspect import signature
 
-#TODO add this type of definition to all of the models
 class CurriculumStudentTeacher(BaseEstimator, ClassifierMixin):
     def __init__(self, teacher, student, transform_func, split_data=False, n_splits=5, random_state=40, shuffle=True):
         """

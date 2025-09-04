@@ -72,8 +72,21 @@ class FairTeacherStudentClassifier(BaseEstimator, ClassifierMixin):
                 group: (1 if group != min_accuracy_group else 1.25)
                 for group in unique_groups
             }
+        elif mode == 2:
+            # Maximum accuracy group - accuracy for current group
+            max_accuracy = max(group_accuracies.values())
+            group_weights = {
+                group: max_accuracy - acc for group, acc in group_accuracies.items()
+            }
         else:
-            raise ValueError("Invalid mode. Choose 0 or 1.")
+            raise ValueError("Invalid mode. Choose 0, 1 or 2.")
+        
+        # Normalize weights using numpy clip
+        total_weight = sum(group_weights.values())
+        for group in group_weights:
+            group_weights[group] = np.clip(
+                group_weights[group] / total_weight, 0.01, 1.0
+            )  # Preventing zero weights
 
         sample_weights = np.array([group_weights[group] for group in z_student])
 

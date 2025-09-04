@@ -100,7 +100,7 @@ class FairnessEvaluatorHelper:
 
         # Set axis labels and title
         plt.xlabel(xlabel)
-        plt.ylabel("Models")
+        plt.ylabel("Pristopi")
         plt.title(title)
 
         # Annotate with the sorted model names
@@ -109,12 +109,50 @@ class FairnessEvaluatorHelper:
         plt.tight_layout()
         plt.show()
 
+        # ---- MARKDOWN TABELA ----
+        headers = [
+            "Model",
+            "Vrednosti (K-fold)",
+            "Povprečje",
+            "Mediana",
+            "Minimum",
+            "Maksimum",
+        ]
+
+        lines = []
+        lines.append("|" + "|".join(headers) + "|")
+        lines.append("|" + "|".join(["---"] * len(headers)) + "|")
+
+        for name, vals in zip(sorted_models, sorted_values):
+            arr = np.array(vals)
+            povp = np.mean(arr)
+            med = np.median(arr)
+            minv = np.min(arr)
+            maxv = np.max(arr)
+
+            # vrednosti ločene s ;
+            vrednosti_str = "; ".join(f"{v:.4f}" for v in arr)
+
+            row = [
+                name,
+                vrednosti_str,
+                f"{povp:.4f}",
+                f"{med:.4f}",
+                f"{minv:.4f}",
+                f"{maxv:.4f}",
+            ]
+            lines.append("|" + "|".join(row) + "|")
+
+        md_table = "\n".join(lines)
+        print(md_table)
+
+
     def plot_accuracy_differences(self):
         """ Plot a sorted box plot for accuracy differences. """
         self.plot_metric(
             self.accuracy_differences, 
-            "Fairness Comparison (Accuracy Difference)", 
-            "Accuracy Difference (Fairness)", 
+            "Razlika v točnosti (Primerjava pravičnosti)", 
+            "Razlika v točnosti", 
             "skyblue"  # Different color
         )
 
@@ -122,8 +160,8 @@ class FairnessEvaluatorHelper:
         """ Plot a sorted box plot for demographic parity differences. """
         self.plot_metric(
             self.demographic_parity_differences, 
-            "Fairness Comparison (Demographic Parity Difference)", 
-            "Demographic Parity Difference", 
+            "Razlika Demografkse  paritete (Primerjava pravičnosti)", 
+            "Demografska pariteta", 
             "lightcoral"  # Different color
         )
 
@@ -131,8 +169,8 @@ class FairnessEvaluatorHelper:
         """ Plot a sorted box plot for equalized odds differences. """
         self.plot_metric(
             self.equalized_odds_differences, 
-            "Fairness Comparison (Equalized Odds Difference)", 
-            "Equalized Odds Difference", 
+            "Razlika Metrike uravnoteženih verjetnosti (Primerjava pravičnosti)", 
+            "Razlika Metrike uravnoteženih verjetnosti", 
             "lightgreen"  # Different color
         )
 
@@ -140,8 +178,8 @@ class FairnessEvaluatorHelper:
         """ Plot a sorted box plot for accuracy distributions. """
         self.plot_metric(
             self.accuracies, 
-            "Model Accuracy Distribution (K-Fold)", 
-            "Accuracy", 
+            "Primerjava Točnosti", 
+            "Točnost", 
             "gold",  # Unique color for accuracy
             sort_ascending=False    # Higher accuracy is better
         )
@@ -172,9 +210,9 @@ class FairnessEvaluatorHelper:
             sns.boxplot(data=df, orient="h", palette="Set2")
 
             # Set labels and title
-            plt.xlabel("Accuracy")
-            plt.ylabel("Models")
-            plt.title(f"Accuracy Distribution by Model for {group_name} (Sensitive Feature)")
+            plt.xlabel("Točnost")
+            plt.ylabel("Pristopi")
+            plt.title(f"Porazdelitev točnosti po modelu za občutljiv spremenljivko {group_name}")
 
             # Get the min and max accuracy values
             min_accuracy = df.min().min()

@@ -7,11 +7,16 @@ class CurriculumHelper:
         self.sensitive_feature = sensitive_feature
 
 
+
     @staticmethod
-    def split_by_sensitive_feature_and_confidence(X, y_prob, sensitive_feature, n_splits=5, ascending=False):
+    def  split_by_sensitive_feature_and_confidence(X, y_prob, sensitive_feature, n_splits=5, ascending_confindance=False):
         """
         Splits X and y into groups based on the given sensitive feature, orders them by their average prediction confidence,
         and sorts each group by confidence.
+
+        ascending_confindance=False ⇒ groups with higher average confidence first ⇒ the easier (more confident) groups are provided to the student first.
+
+        ascending_confindance=True ⇒ groups with lower average confidence first ⇒ the harder groups first.
 
         Returns:
             sensitive_feature_splits (list): A list of tuples where each tuple contains (X, y_pred) for each sensitive feature value.
@@ -29,7 +34,7 @@ class CurriculumHelper:
         feature_groups = X_sorted.groupby(sensitive_feature)
 
         # Compute average confidence for each sensitive feature group
-        feature_confidence = feature_groups["max_prob"].mean().sort_values(ascending=ascending)  
+        feature_confidence = feature_groups["max_prob"].mean().sort_values(ascending=ascending_confindance)  
 
         # Store sensitive feature-based splits
         sensitive_feature_splits = []
@@ -46,9 +51,14 @@ class CurriculumHelper:
         return sensitive_feature_splits
         
     @staticmethod
-    def split_into_difficulty_parts(X, y_prob, n_splits=5, ascending=False):
+    def split_into_difficulty_parts(X, y_prob, n_splits=5, ascending_confidance=False):
         """Splits X and y into 5 parts based on the highest prediction probability, 
         with the most difficult samples (lowest probability) getting split last.
+
+        ascending_confindance=False ⇒ groups with higher average confidence first ⇒ the easier (more confident) groups are provided to the student first.
+
+        ascending_confindance=True ⇒ groups with lower average confidence first ⇒ the harder groups first.
+
         """
         split_size = len(X) // n_splits
         
@@ -62,7 +72,7 @@ class CurriculumHelper:
         X_sorted['max_prob'] = max_prob
         
         # By default: Sort by the highest probability (descending order) - more confident predictions come first
-        X_sorted = X_sorted.sort_values(by='max_prob', ascending=ascending)
+        X_sorted = X_sorted.sort_values(by='max_prob', ascending=ascending_confidance)
 
         #print(X_sorted.head())    
         # Split the sorted data into n_splits parts
@@ -79,7 +89,7 @@ class CurriculumHelper:
     
     @staticmethod
     def split_into_difficulty_parts_asc(X, y_prob, n_splits=5):
-        return CurriculumHelper.split_into_difficulty_parts(X, y_prob, n_splits, ascending=True)
+        return CurriculumHelper.split_into_difficulty_parts(X, y_prob, n_splits, ascending_confidance=True)
     
     @staticmethod
     def split_into_parts(X, y_prob, n_splits=5):
